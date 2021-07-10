@@ -1,6 +1,6 @@
 /// <reference types="node" />
-import { EventEmitter } from 'events';
-import { OnDidChangeCallback, Options, Unsubscribe, Schema, OnDidAnyChangeCallback } from './types';
+import { EventEmitter } from "events";
+import { OnDidChangeCallback, Options, Unsubscribe, Schema, OnDidAnyChangeCallback } from "./types";
 declare class Conf<T extends Record<string, any> = Record<string, unknown>> implements Iterable<[keyof T, T[keyof T]]> {
     #private;
     readonly path: string;

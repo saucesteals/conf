@@ -24,38 +24,33 @@ const pkgUp = require("pkg-up");
 const envPaths = require("env-paths");
 const atomically = require("atomically");
 const ajv_1 = require("ajv");
-const ajv_formats_1 = require("ajv-formats");
 const debounceFn = require("debounce-fn");
 const semver = require("semver");
 const onetime = require("onetime");
-const encryptionAlgorithm = 'aes-256-cbc';
+const encryptionAlgorithm = "aes-256-cbc";
 const createPlainObject = () => {
     return Object.create(null);
 };
 const isExist = (data) => {
     return data !== undefined && data !== null;
 };
-let parentDir = '';
+let parentDir = "";
 try {
     // Prevent caching of this module so module.parent is always accurate.
     // Note: This trick won't work with ESM or inside a webworker
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete require.cache[__filename];
-    parentDir = path.dirname((_b = (_a = module.parent) === null || _a === void 0 ? void 0 : _a.filename) !== null && _b !== void 0 ? _b : '.');
+    parentDir = path.dirname((_b = (_a = module.parent) === null || _a === void 0 ? void 0 : _a.filename) !== null && _b !== void 0 ? _b : ".");
 }
 catch (_c) { }
 const checkValueType = (key, value) => {
-    const nonJsonTypes = new Set([
-        'undefined',
-        'symbol',
-        'function'
-    ]);
+    const nonJsonTypes = new Set(["undefined", "symbol", "function"]);
     const type = typeof value;
     if (nonJsonTypes.has(type)) {
         throw new TypeError(`Setting a value of type \`${type}\` for key \`${key}\` is not allowed as it's not supported by JSON`);
     }
 };
-const INTERNAL_KEY = '__internal__';
+const INTERNAL_KEY = "__internal__";
 const MIGRATION_KEY = `${INTERNAL_KEY}.migrations.version`;
 class Conf {
     constructor(partialOptions = {}) {
@@ -64,21 +59,21 @@ class Conf {
         _Conf_encryptionKey.set(this, void 0);
         _Conf_options.set(this, void 0);
         _Conf_defaultValues.set(this, {});
-        this._deserialize = value => JSON.parse(value);
-        this._serialize = value => JSON.stringify(value, undefined, '\t');
+        this._deserialize = (value) => JSON.parse(value);
+        this._serialize = (value) => JSON.stringify(value, undefined, "\t");
         const options = {
-            configName: 'config',
-            fileExtension: 'json',
-            projectSuffix: 'nodejs',
+            configName: "config",
+            fileExtension: "json",
+            projectSuffix: "nodejs",
             clearInvalidConfig: false,
             accessPropertiesByDotNotation: true,
-            ...partialOptions
+            ...partialOptions,
         };
         const getPackageData = onetime(() => {
             const packagePath = pkgUp.sync({ cwd: parentDir });
             // Can't use `require` because of Webpack being annoying:
             // https://github.com/webpack/webpack/issues/196
-            const packageData = packagePath && JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+            const packageData = packagePath && JSON.parse(fs.readFileSync(packagePath, "utf8"));
             return packageData !== null && packageData !== void 0 ? packageData : {};
         });
         if (!options.cwd) {
@@ -86,23 +81,24 @@ class Conf {
                 options.projectName = getPackageData().name;
             }
             if (!options.projectName) {
-                throw new Error('Project name could not be inferred. Please specify the `projectName` option.');
+                throw new Error("Project name could not be inferred. Please specify the `projectName` option.");
             }
-            options.cwd = envPaths(options.projectName, { suffix: options.projectSuffix }).config;
+            options.cwd = envPaths(options.projectName, {
+                suffix: options.projectSuffix,
+            }).config;
         }
         __classPrivateFieldSet(this, _Conf_options, options, "f");
         if (options.schema) {
-            if (typeof options.schema !== 'object') {
-                throw new TypeError('The `schema` option must be an object.');
+            if (typeof options.schema !== "object") {
+                throw new TypeError("The `schema` option must be an object.");
             }
             const ajv = new ajv_1.default({
                 allErrors: true,
-                useDefaults: true
+                useDefaults: true,
             });
-            ajv_formats_1.default(ajv);
             const schema = {
-                type: 'object',
-                properties: options.schema
+                type: "object",
+                properties: options.schema,
             };
             __classPrivateFieldSet(this, _Conf_validator, ajv.compile(schema), "f");
             for (const [key, value] of Object.entries(options.schema)) {
@@ -114,7 +110,7 @@ class Conf {
         if (options.defaults) {
             __classPrivateFieldSet(this, _Conf_defaultValues, {
                 ...__classPrivateFieldGet(this, _Conf_defaultValues, "f"),
-                ...options.defaults
+                ...options.defaults,
             }, "f");
         }
         if (options.serialize) {
@@ -125,8 +121,10 @@ class Conf {
         }
         this.events = new events_1.EventEmitter();
         __classPrivateFieldSet(this, _Conf_encryptionKey, options.encryptionKey, "f");
-        const fileExtension = options.fileExtension ? `.${options.fileExtension}` : '';
-        this.path = path.resolve(options.cwd, `${(_a = options.configName) !== null && _a !== void 0 ? _a : 'config'}${fileExtension}`);
+        const fileExtension = options.fileExtension
+            ? `.${options.fileExtension}`
+            : "";
+        this.path = path.resolve(options.cwd, `${(_a = options.configName) !== null && _a !== void 0 ? _a : "config"}${fileExtension}`);
         const fileStore = this.store;
         const store = Object.assign(createPlainObject(), options.defaults, fileStore);
         this._validate(store);
@@ -144,7 +142,7 @@ class Conf {
                 options.projectVersion = getPackageData().version;
             }
             if (!options.projectVersion) {
-                throw new Error('Project version could not be inferred. Please specify the `projectVersion` option.');
+                throw new Error("Project version could not be inferred. Please specify the `projectVersion` option.");
             }
             this._migrate(options.migrations, options.projectVersion);
         }
@@ -156,11 +154,11 @@ class Conf {
         return key in this.store ? this.store[key] : defaultValue;
     }
     set(key, value) {
-        if (typeof key !== 'string' && typeof key !== 'object') {
+        if (typeof key !== "string" && typeof key !== "object") {
             throw new TypeError(`Expected \`key\` to be of type \`string\` or \`object\`, got ${typeof key}`);
         }
-        if (typeof key !== 'object' && value === undefined) {
-            throw new TypeError('Use `delete()` to clear values');
+        if (typeof key !== "object" && value === undefined) {
+            throw new TypeError("Use `delete()` to clear values");
         }
         if (this._containsReservedKey(key)) {
             throw new TypeError(`Please don't use the ${INTERNAL_KEY} key, as it's used to manage this module internal operations.`);
@@ -175,7 +173,7 @@ class Conf {
                 store[key] = value;
             }
         };
-        if (typeof key === 'object') {
+        if (typeof key === "object") {
             const object = key;
             for (const [key, value] of Object.entries(object)) {
                 set(key, value);
@@ -246,10 +244,10 @@ class Conf {
     @returns A function, that when called, will unsubscribe.
     */
     onDidChange(key, callback) {
-        if (typeof key !== 'string') {
+        if (typeof key !== "string") {
             throw new TypeError(`Expected \`key\` to be of type \`string\`, got ${typeof key}`);
         }
-        if (typeof callback !== 'function') {
+        if (typeof callback !== "function") {
             throw new TypeError(`Expected \`callback\` to be of type \`function\`, got ${typeof callback}`);
         }
         return this._handleChange(() => this.get(key), callback);
@@ -261,7 +259,7 @@ class Conf {
     @returns A function, that when called, will unsubscribe.
     */
     onDidAnyChange(callback) {
-        if (typeof callback !== 'function') {
+        if (typeof callback !== "function") {
             throw new TypeError(`Expected \`callback\` to be of type \`function\`, got ${typeof callback}`);
         }
         return this._handleChange(() => this.store, callback);
@@ -271,18 +269,18 @@ class Conf {
     }
     get store() {
         try {
-            const data = fs.readFileSync(this.path, __classPrivateFieldGet(this, _Conf_encryptionKey, "f") ? null : 'utf8');
+            const data = fs.readFileSync(this.path, __classPrivateFieldGet(this, _Conf_encryptionKey, "f") ? null : "utf8");
             const dataString = this._encryptData(data);
             const deserializedData = this._deserialize(dataString);
             this._validate(deserializedData);
             return Object.assign(createPlainObject(), deserializedData);
         }
         catch (error) {
-            if (error.code === 'ENOENT') {
+            if (error.code === "ENOENT") {
                 this._ensureDirectory();
                 return createPlainObject();
             }
-            if (__classPrivateFieldGet(this, _Conf_options, "f").clearInvalidConfig && error.name === 'SyntaxError') {
+            if (__classPrivateFieldGet(this, _Conf_options, "f").clearInvalidConfig && error.name === "SyntaxError") {
                 return createPlainObject();
             }
             throw error;
@@ -292,7 +290,7 @@ class Conf {
         this._ensureDirectory();
         this._validate(value);
         this._write(value);
-        this.events.emit('change');
+        this.events.emit("change");
     }
     *[(_Conf_validator = new WeakMap(), _Conf_encryptionKey = new WeakMap(), _Conf_options = new WeakMap(), _Conf_defaultValues = new WeakMap(), Symbol.iterator)]() {
         for (const [key, value] of Object.entries(this.store)) {
@@ -307,15 +305,21 @@ class Conf {
             // Check if an initialization vector has been used to encrypt the data
             if (__classPrivateFieldGet(this, _Conf_encryptionKey, "f")) {
                 try {
-                    if (data.slice(16, 17).toString() === ':') {
+                    if (data.slice(16, 17).toString() === ":") {
                         const initializationVector = data.slice(0, 16);
-                        const password = crypto.pbkdf2Sync(__classPrivateFieldGet(this, _Conf_encryptionKey, "f"), initializationVector.toString(), 10000, 32, 'sha512');
+                        const password = crypto.pbkdf2Sync(__classPrivateFieldGet(this, _Conf_encryptionKey, "f"), initializationVector.toString(), 10000, 32, "sha512");
                         const decipher = crypto.createDecipheriv(encryptionAlgorithm, password, initializationVector);
-                        data = Buffer.concat([decipher.update(Buffer.from(data.slice(17))), decipher.final()]).toString('utf8');
+                        data = Buffer.concat([
+                            decipher.update(Buffer.from(data.slice(17))),
+                            decipher.final(),
+                        ]).toString("utf8");
                     }
                     else {
                         const decipher = crypto.createDecipher(encryptionAlgorithm, __classPrivateFieldGet(this, _Conf_encryptionKey, "f"));
-                        data = Buffer.concat([decipher.update(Buffer.from(data)), decipher.final()]).toString('utf8');
+                        data = Buffer.concat([
+                            decipher.update(Buffer.from(data)),
+                            decipher.final(),
+                        ]).toString("utf8");
                     }
                 }
                 catch (_a) { }
@@ -335,8 +339,8 @@ class Conf {
             currentValue = newValue;
             callback.call(this, newValue, oldValue);
         };
-        this.events.on('change', onChange);
-        return () => this.events.removeListener('change', onChange);
+        this.events.on("change", onChange);
+        return () => this.events.removeListener("change", onChange);
     }
     _validate(data) {
         if (!__classPrivateFieldGet(this, _Conf_validator, "f")) {
@@ -346,9 +350,8 @@ class Conf {
         if (valid || !__classPrivateFieldGet(this, _Conf_validator, "f").errors) {
             return;
         }
-        const errors = __classPrivateFieldGet(this, _Conf_validator, "f").errors
-            .map(({ instancePath, message = '' }) => `\`${instancePath.slice(1)}\` ${message}`);
-        throw new Error('Config schema violation: ' + errors.join('; '));
+        const errors = __classPrivateFieldGet(this, _Conf_validator, "f").errors.map(({ instancePath, message = "" }) => `\`${instancePath.slice(1)}\` ${message}`);
+        throw new Error("Config schema violation: " + errors.join("; "));
     }
     _ensureDirectory() {
         // Ensure the directory exists as it could have been deleted in the meantime.
@@ -358,9 +361,14 @@ class Conf {
         let data = this._serialize(value);
         if (__classPrivateFieldGet(this, _Conf_encryptionKey, "f")) {
             const initializationVector = crypto.randomBytes(16);
-            const password = crypto.pbkdf2Sync(__classPrivateFieldGet(this, _Conf_encryptionKey, "f"), initializationVector.toString(), 10000, 32, 'sha512');
+            const password = crypto.pbkdf2Sync(__classPrivateFieldGet(this, _Conf_encryptionKey, "f"), initializationVector.toString(), 10000, 32, "sha512");
             const cipher = crypto.createCipheriv(encryptionAlgorithm, password, initializationVector);
-            data = Buffer.concat([initializationVector, Buffer.from(':'), cipher.update(Buffer.from(data)), cipher.final()]);
+            data = Buffer.concat([
+                initializationVector,
+                Buffer.from(":"),
+                cipher.update(Buffer.from(data)),
+                cipher.final(),
+            ]);
         }
         // Temporary workaround for Conf being packaged in a Ubuntu Snap app.
         // See https://github.com/sindresorhus/conf/pull/82
@@ -375,7 +383,7 @@ class Conf {
                 // Fix for https://github.com/sindresorhus/electron-store/issues/106
                 // Sometimes on Windows, we will get an EXDEV error when atomic writing
                 // (even though to the same directory), so we fall back to non atomic write
-                if (error.code === 'EXDEV') {
+                if (error.code === "EXDEV") {
                     fs.writeFileSync(this.path, data);
                     return;
                 }
@@ -388,22 +396,21 @@ class Conf {
         if (!fs.existsSync(this.path)) {
             this._write(createPlainObject());
         }
-        if (process.platform === 'win32') {
+        if (process.platform === "win32") {
             fs.watch(this.path, { persistent: false }, debounceFn(() => {
                 // On Linux and Windows, writing to the config file emits a `rename` event, so we skip checking the event type.
-                this.events.emit('change');
+                this.events.emit("change");
             }, { wait: 100 }));
         }
         else {
             fs.watchFile(this.path, { persistent: false }, debounceFn(() => {
-                this.events.emit('change');
+                this.events.emit("change");
             }, { wait: 5000 }));
         }
     }
     _migrate(migrations, versionToMigrate) {
-        let previousMigratedVersion = this._get(MIGRATION_KEY, '0.0.0');
-        const newerVersions = Object.keys(migrations)
-            .filter(candidateVersion => this._shouldPerformMigration(candidateVersion, previousMigratedVersion, versionToMigrate));
+        let previousMigratedVersion = this._get(MIGRATION_KEY, "0.0.0");
+        const newerVersions = Object.keys(migrations).filter((candidateVersion) => this._shouldPerformMigration(candidateVersion, previousMigratedVersion, versionToMigrate));
         let storeBackup = { ...this.store };
         for (const version of newerVersions) {
             try {
@@ -418,18 +425,19 @@ class Conf {
                 throw new Error(`Something went wrong during the migration! Changes applied to the store until this failed migration will be restored. ${error}`);
             }
         }
-        if (this._isVersionInRangeFormat(previousMigratedVersion) || !semver.eq(previousMigratedVersion, versionToMigrate)) {
+        if (this._isVersionInRangeFormat(previousMigratedVersion) ||
+            !semver.eq(previousMigratedVersion, versionToMigrate)) {
             this._set(MIGRATION_KEY, versionToMigrate);
         }
     }
     _containsReservedKey(key) {
-        if (typeof key === 'object') {
+        if (typeof key === "object") {
             const firsKey = Object.keys(key)[0];
             if (firsKey === INTERNAL_KEY) {
                 return true;
             }
         }
-        if (typeof key !== 'string') {
+        if (typeof key !== "string") {
             return false;
         }
         if (__classPrivateFieldGet(this, _Conf_options, "f").accessPropertiesByDotNotation) {
@@ -445,7 +453,8 @@ class Conf {
     }
     _shouldPerformMigration(candidateVersion, previousMigratedVersion, versionToMigrate) {
         if (this._isVersionInRangeFormat(candidateVersion)) {
-            if (previousMigratedVersion !== '0.0.0' && semver.satisfies(previousMigratedVersion, candidateVersion)) {
+            if (previousMigratedVersion !== "0.0.0" &&
+                semver.satisfies(previousMigratedVersion, candidateVersion)) {
                 return false;
             }
             return semver.satisfies(versionToMigrate, candidateVersion);
